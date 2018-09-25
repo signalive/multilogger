@@ -3,7 +3,8 @@ const Joi = require('joi');
 const winston = require('winston');
 const Papertrail = require('winston-papertrail');
 const Elasticsearch = require('winston-elasticsearch');
-const Stackdriver = require('@google-cloud/logging-winston');
+/* Stackdriver */
+const {LoggingWinston} = require('@google-cloud/logging-winston');
 
 
 const consoleTransportSchema = Joi.compile(Joi.object({
@@ -96,8 +97,7 @@ const stackdriverTransportSchema = Joi.compile(Joi.object({
         version: Joi.string().required(),
         resourceType: Joi.string().required()
     }).required(),
-    keyFileName: Joi.string().optional(),
-    keyFilePath: Joi.string().optional()
+    keyFilename: Joi.string().optional(),
 }).unknown(false));
 
 
@@ -203,15 +203,17 @@ class MultiLogger extends winston.Logger {
         if (!this.apiVersion)
             throw new Error('An apiVersion must be set to the logger before creating stackdriver transport');
 
-        if (!options.keyFilePath && !options.projectId)
-            throw new Error('Either keyFilePath or projectId must be provided in options to create stackdriver transport');
+        const keyFilename = options.keyFilename || process.env.GOOGLE_APPLICATION_CREDENTIALS;
+
+        if (!keyFilename && !options.projectId)
+            throw new Error('Either keyFilename or projectId must be provided in options to create stackdriver transport');
 
         if (!multiple && this.transports.Stackdriver) this.remove(winston.transports.Stackdriver);
 
         let projectId = null;
 
-        if (options.keyFilePath)
-            projectId = require(options.keyFilePath).project_id;
+        if (keyFilename)
+            projectId = require(keyFilename).project_id;
 
         _.defaultsDeep(options, {
             projectId,
@@ -220,11 +222,12 @@ class MultiLogger extends winston.Logger {
                 service: this.name,
                 version: this.apiVersion,
                 resourceType: 'api'
-            }
+            },
+            keyFilename
         });
 
         const config = Joi.attempt(options, stackdriverTransportSchema);
-        this.add(winston.transports.Stackdriver, config);
+        this.add(LoggingWinston, config);
     }
 
     addTransport({transportName, options = {}} = {}) {
