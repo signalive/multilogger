@@ -203,9 +203,9 @@ class MultiLogger extends winston.Logger {
 
         _.defaultsDeep(options, {
             projectId,
-            logName: this.name,
+            logName: this.serviceType,
             serviceContext: {
-                service: this.serviceType,
+                service: this.name,
                 version: this.apiVersion,
                 resourceType: 'api'
             }
