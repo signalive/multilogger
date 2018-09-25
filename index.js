@@ -120,7 +120,7 @@ class MultiLogger extends winston.Logger {
                 name: Joi.string(),
                 serviceType: Joi.string(),
                 apiVersion: Joi.string(),
-                transports: multiTransportSchema
+                transports: Joi.object()
             })
         ));
 
@@ -243,14 +243,6 @@ class MultiLogger extends winston.Logger {
     }
 
     addByConfig(conf) {
-        if (conf.papertrail)
-            _.defaults(conf.papertrail, {program: this.name});
-
-        if (conf.stackdriver)
-            _.defaults(conf.stackdriver, {logName: this.name});
-
-        Joi.attempt(conf, multiTransportSchema);
-
         _.forEach(conf, (options, transport) => {
             if (transport == 'console') this.addConsole({options});
             if (transport == 'file') this.addFile({options});
