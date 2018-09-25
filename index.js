@@ -101,6 +101,15 @@ const stackdriverTransportSchema = Joi.compile(Joi.object({
 }).unknown(false));
 
 
+const multiTransportSchema = Joi.compile(Joi.object({
+    console: consoleTransportSchema,
+    file: fileTransportSchema,
+    papertrail: papertrailTransportSchema,
+    elasticsearch: elasticsearchTransportSchema,
+    stackdriver: stackdriverTransportSchema
+}).unknown(false));
+
+
 class MultiLogger extends winston.Logger {
     constructor(params) {
         super();
@@ -111,6 +120,7 @@ class MultiLogger extends winston.Logger {
                 name: Joi.string(),
                 serviceType: Joi.string(),
                 apiVersion: Joi.string(),
+                transports: multiTransportSchema
             })
         ));
 
@@ -118,11 +128,13 @@ class MultiLogger extends winston.Logger {
             this.setName(params);
 
         if (_.isObject(params)) {
-            const {name, serviceType, apiVersion} = params;
+            const {name, serviceType, apiVersion, transports} = params;
 
             if (name) this.setName(name);
             if (serviceType)this.setServiceType(serviceType);
             if (apiVersion) this.setApiVersion(apiVersion);
+
+            if (transports) this.addByConfig(transports);
         }
     }
 
@@ -237,13 +249,7 @@ class MultiLogger extends winston.Logger {
         if (conf.stackdriver)
             _.defaults(conf.stackdriver, {logName: this.name});
 
-        Joi.attempt(conf, Joi.object({
-            console: consoleTransportSchema,
-            file: fileTransportSchema,
-            papertrail: papertrailTransportSchema,
-            elasticsearch: elasticsearchTransportSchema,
-            stackdriver: stackdriverTransportSchema
-        }));
+        Joi.attempt(conf, multiTransportSchema);
 
         _.forEach(conf, (options, transport) => {
             if (transport == 'console') this.addConsole({options});
