@@ -96,7 +96,7 @@ const stackdriverTransportSchema = Joi.compile(Joi.object({
         version: Joi.string().required(),
         resourceType: Joi.string().required()
     }).required(),
-    keyFileName: Joi.string().required()
+    keyFileName: Joi.string().optional()
 }).unknown(false));
 
 
