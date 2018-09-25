@@ -100,55 +100,98 @@ const stackdriverTransportSchema = Joi.compile(Joi.object({
 }).unknown(false));
 
 
-class MultiLoggerFactory {
-    static create(name) {
-        const logger = new winston.Logger();
-        logger.__uniqueIdentifierName__ = name;
-        return logger;
+
+
+class MultiLogger extends winston.Logger {
+    constructor(name) {
+        super();
+        if (name)
+            this.setName(name);
     }
 
-    static addConsole({logger, options = {}, multiple = false}) {
-        if (!multiple && logger.transports.console) logger.remove(winston.transports.Console);
+    get name() {
+        return this.__uniqueIdentifierName__;
+    }
+
+    setName(name) {
+        Joi.attempt(name, Joi.string());
+
+        this.__uniqueIdentifierName__ = name;
+    }
+
+    addConsole({options = {}, multiple = false} = {}) {
+        if (!multiple && this.transports.console) this.remove(winston.transports.Console);
 
         const config = Joi.attempt(options, consoleTransportSchema);
-        logger.add(winston.transports.Console, config);
+        this.add(winston.transports.Console, config);
     }
 
-    static addFile({logger, options = {}, multiple = false}) {
-        if (!multiple && logger.transports.file) logger.remove(winston.transports.File);
+    addFile({options = {}, multiple = false} = {}) {
+        if (!multiple && this.transports.file) this.remove(winston.transports.File);
 
         const config = Joi.attempt(options, fileTransportSchema);
-        logger.add(winston.transports.File, config);
+        this.add(winston.transports.File, config);
     }
 
-    static addPapertrail({logger, options = {}, multiple = false}) {
-        if (!multiple && logger.transports.Papertrail) logger.remove(winston.transports.Papertrail);
+    addPapertrail({options = {}, multiple = false} = {}) {
+        if (!this.name)
+            throw new Error('A name must be set to the logger before creating papertrail transport');
 
-        _.defaults(options, {program: logger.__uniqueIdentifierName__});
+        if (!multiple && this.transports.Papertrail) this.remove(winston.transports.Papertrail);
+
+        _.defaults(options, {program: this.name});
 
         const config = Joi.attempt(options, papertrailTransportSchema);
-        logger.add(winston.transports.Papertrail, config);
+        this.add(winston.transports.Papertrail, config);
     }
 
-    static addElasticsearch({logger, options = {}, multiple = false}) {
-        if (!multiple && logger.transports.Elasticsearch) logger.remove(winston.transports.Elasticsearch);
+    addElasticsearch({options = {}, multiple = false} = {}) {
+        if (!multiple && this.transports.Elasticsearch) this.remove(winston.transports.Elasticsearch);
 
         const config = Joi.attempt(options, elasticsearchTransportSchema);
-        logger.add(winston.transports.Elasticsearch, config);
+        this.add(winston.transports.Elasticsearch, config);
     }
 
-    static addStackdriver({logger, options = {}, multiple = false}) {
-        if (!multiple && logger.transports.Stackdriver) logger.remove(winston.transports.Stackdriver);
+    addStackdriver({options = {}, multiple = false} = {}) {
+        if (!this.name)
+            throw new Error('A name must be set to the logger before creating stackdriver transport');
 
-        _.defaults(options, {logName: logger.__uniqueIdentifierName__});
+        if (!multiple && this.transports.Stackdriver) this.remove(winston.transports.Stackdriver);
+
+        _.defaults(options, {logName: this.name});
 
         const config = Joi.attempt(options, stackdriverTransportSchema);
-        logger.add(winston.transports.Stackdriver, config);
+        this.add(winston.transports.Stackdriver, config);
     }
 
-    static addCustom({logger, transport, options = {}}) {
-        logger.add(transport, options);
+    addCustom({transport, options = {}} = {}) {
+        this.add(transport, options);
+    }
+
+    addByConfig(conf) {
+        if (conf.papertrail)
+            _.defaults(conf.papertrail, {program: this.name});
+
+        if (conf.stackdriver)
+            _.defaults(conf.stackdriver, {logName: this.name});
+
+        Joi.attempt(conf, Joi.object({
+            console: consoleTransportSchema,
+            file: fileTransportSchema,
+            papertrail: papertrailTransportSchema,
+            elasticsearch: elasticsearchTransportSchema,
+            stackdriver: stackdriverTransportSchema
+        }));
+
+        _.forEach(conf, (options, transport) => {
+            if (transport == 'console') this.addConsole({options});
+            if (transport == 'file') this.addFile({options});
+            if (transport == 'papertrail') this.addPapertrail({options});
+            if (transport == 'elasticsearch') this.addElasticsearch({options});
+            if (transport == 'stackdriver') this.addStackdriver({options});
+        });
     }
 }
 
-module.exports = MultiLoggerFactory;
+
+module.exports = MultiLogger;
