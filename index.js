@@ -96,17 +96,34 @@ const stackdriverTransportSchema = Joi.compile(Joi.object({
         version: Joi.string().required(),
         resourceType: Joi.string().required()
     }).required(),
-    keyFileName: Joi.string().optional()
+    keyFileName: Joi.string().optional(),
+    keyFilePath: Joi.string().optional()
 }).unknown(false));
 
 
-
-
 class MultiLogger extends winston.Logger {
-    constructor(name) {
+    constructor(params) {
         super();
-        if (name)
-            this.setName(name);
+
+        Joi.attempt(params, Joi.alternatives().try(
+            Joi.string(),
+            Joi.object({
+                name: Joi.string(),
+                serviceType: Joi.string(),
+                apiVersion: Joi.string(),
+            })
+        ));
+
+        if (_.isString(params))
+            this.setName(params);
+
+        if (_.isObject(params)) {
+            const {name, serviceType, apiVersion} = params;
+
+            if (name) this.setName(name);
+            if (serviceType)this.setServiceType(serviceType);
+            if (apiVersion) this.setApiVersion(apiVersion);
+        }
     }
 
     get name() {
@@ -117,6 +134,18 @@ class MultiLogger extends winston.Logger {
         Joi.attempt(name, Joi.string());
 
         this.__uniqueIdentifierName__ = name;
+    }
+
+    setServiceType(serviceType) {
+        Joi.attempt(serviceType, Joi.string());
+
+        this.serviceType = serviceType;
+    }
+
+    setApiVersion(apiVersion) {
+        Joi.attempt(apiVersion, Joi.string());
+
+        this.apiVersion = apiVersion;
     }
 
     addConsole({options = {}, multiple = false} = {}) {
@@ -156,15 +185,48 @@ class MultiLogger extends winston.Logger {
         if (!this.name)
             throw new Error('A name must be set to the logger before creating stackdriver transport');
 
+        if (!this.serviceType)
+            throw new Error('A serviceType must be set to the logger before creating stackdriver transport');
+
+        if (!this.apiVersion)
+            throw new Error('An apiVersion must be set to the logger before creating stackdriver transport');
+
+        if (!options.keyFilePath && !options.projectId)
+            throw new Error('Either keyFilePath or projectId must be provided in options to create stackdriver transport');
+
         if (!multiple && this.transports.Stackdriver) this.remove(winston.transports.Stackdriver);
 
-        _.defaults(options, {logName: this.name});
+        let projectId = null;
+
+        if (options.keyFilePath)
+            projectId = require(options.keyFilePath).project_id;
+
+        _.defaultsDeep(options, {
+            projectId,
+            logName: this.name,
+            serviceContext: {
+                service: this.serviceType,
+                version: this.apiVersion,
+                resourceType: 'api'
+            }
+        });
 
         const config = Joi.attempt(options, stackdriverTransportSchema);
         this.add(winston.transports.Stackdriver, config);
     }
 
-    addCustom({transport, options = {}} = {}) {
+    addTransport({transportName, options = {}} = {}) {
+        switch (transportName) {
+            case 'console': this.addConsole({options}); break;
+            case 'file': this.addFile({options}); break;
+            case 'papertrail': this.addPapertrail({options}); break;
+            case 'elasticsearch': this.addElasticsearch({options}); break;
+            case 'stackdriver': this.addStackdriver({options}); break;
+            default: throw new Error(`Unknown transport ${transportName} is not allowed. Use addCustomTransport method`);
+        }
+    }
+
+    addCustomTransport({transport, options = {}} = {}) {
         this.add(transport, options);
     }
 
