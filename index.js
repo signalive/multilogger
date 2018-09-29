@@ -246,6 +246,11 @@ class MultiLogger extends winston.Logger {
 
     addByConfig(conf) {
         _.forEach(conf, (options, transport) => {
+            if (_.isBoolean(options)) {
+                if (!options) return;
+                options = {};
+            }
+
             if (transport == 'console') this.addConsole({options});
             if (transport == 'file') this.addFile({options});
             if (transport == 'papertrail') this.addPapertrail({options});
