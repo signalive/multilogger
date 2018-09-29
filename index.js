@@ -1,10 +1,9 @@
 const _ = require('lodash');
 const Joi = require('joi');
 const winston = require('winston');
-const Papertrail = require('winston-papertrail');
+const Papertrail = require('winston-papertrail').Papertrail;
 const Elasticsearch = require('winston-elasticsearch');
-/* Stackdriver */
-const {LoggingWinston} = require('@google-cloud/logging-winston');
+const {LoggingWinston: Stackdriver} = require('@google-cloud/logging-winston');
 
 
 const consoleTransportSchema = Joi.compile(Joi.object({
@@ -178,19 +177,19 @@ class MultiLogger extends winston.Logger {
         if (!this.name)
             throw new Error('A name must be set to the logger before creating papertrail transport');
 
-        if (!multiple && this.transports.Papertrail) this.remove(winston.transports.Papertrail);
+        if (!multiple && this.transports.Papertrail) this.remove(Papertrail);
 
         _.defaults(options, {program: this.name});
 
         const config = Joi.attempt(options, papertrailTransportSchema);
-        this.add(winston.transports.Papertrail, config);
+        this.add(Papertrail, config);
     }
 
     addElasticsearch({options = {}, multiple = false} = {}) {
-        if (!multiple && this.transports.Elasticsearch) this.remove(winston.transports.Elasticsearch);
+        if (!multiple && this.transports.Elasticsearch) this.remove(Elasticsearch);
 
         const config = Joi.attempt(options, elasticsearchTransportSchema);
-        this.add(winston.transports.Elasticsearch, config);
+        this.add(Elasticsearch, config);
     }
 
     addStackdriver({options = {}, multiple = false} = {}) {
@@ -208,7 +207,7 @@ class MultiLogger extends winston.Logger {
         if (!keyFilename && !options.projectId)
             throw new Error('Either keyFilename or projectId must be provided in options to create stackdriver transport');
 
-        if (!multiple && this.transports.Stackdriver) this.remove(winston.transports.Stackdriver);
+        if (!multiple && this.transports.LoggingWinston) this.remove(LoggingWinston);
 
         let projectId = null;
 
@@ -227,7 +226,7 @@ class MultiLogger extends winston.Logger {
         });
 
         const config = Joi.attempt(options, stackdriverTransportSchema);
-        this.add(LoggingWinston, config);
+        this.add(Stackdriver, config);
     }
 
     addTransport({transportName, options = {}} = {}) {
