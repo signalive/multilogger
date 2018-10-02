@@ -97,6 +97,7 @@ const stackdriverTransportSchema = Joi.compile(Joi.object({
         resourceType: Joi.string().required()
     }).required(),
     keyFilename: Joi.string().optional(),
+    labels: Joi.object().optional()
 }).unknown(false));
 
 
@@ -222,7 +223,11 @@ class MultiLogger extends winston.Logger {
                 version: this.apiVersion,
                 resourceType: 'api'
             },
-            keyFilename
+            keyFilename,
+            labels: {
+                name: this.name,
+                version:  this.apiVersion
+            }
         });
 
         const config = Joi.attempt(options, stackdriverTransportSchema);
