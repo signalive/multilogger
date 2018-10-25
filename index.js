@@ -254,6 +254,11 @@ class MultiLogger extends winston.Logger {
             if (_.isBoolean(options)) {
                 if (!options) return;
                 options = {};
+            } else if (_.isString(options)) {
+                if (options == 'enabled') options = {};
+                else if (options == 'disabled') return;
+                else
+                    throw new Error(`Unknown option ${options} for transport ${transport}`);
             }
 
             if (transport == 'console') this.addConsole({options});
