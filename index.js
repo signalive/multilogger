@@ -89,6 +89,7 @@ const elasticsearchTransportSchema = Joi.compile(Joi.object({
 
 
 const stackdriverTransportSchema = Joi.compile(Joi.object({
+    level: Joi.string().valid('error', 'warn', 'info', 'verbose', 'debug', 'silly'),
     projectId: Joi.string().required(),
     logName: Joi.string().required(),
     serviceContext: Joi.object({
