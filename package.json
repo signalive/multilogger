@@ -1,6 +1,6 @@
 {
   "name": "multilogger",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@google-cloud/logging-winston": "0.10.1",
+    "@google-cloud/logging-winston": "4.0.4",
     "joi": "13.7.0",
     "lodash": "4.17.11",
     "winston": "2.4.4",
