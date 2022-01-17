@@ -9,11 +9,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@google-cloud/logging-winston": "0.10.1",
-    "joi": "13.7.0",
-    "lodash": "4.17.11",
-    "winston": "2.4.4",
-    "winston-elasticsearch": "0.6.0",
-    "winston-papertrail": "1.0.5"
+    "@google-cloud/logging-winston": "4.1.1",
+    "joi": "17.5.0",
+    "lodash": "4.17.21",
+    "winston": "3.4.0",
+    "winston-elasticsearch": "0.16.0",
+    "winston-papertrail-transport": "1.0.9"
   }
 }
