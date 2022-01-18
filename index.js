@@ -10,6 +10,7 @@ const consoleTransportSchema = Joi.compile(Joi.object({
     level: Joi.string().valid('error', 'warn', 'info', 'verbose', 'debug', 'silly'),
     silent: Joi.boolean(),
     colorize: Joi.boolean().default(true),
+    format: Joi.func().default(winston.format.simple),
     timestamp: Joi.alternatives().try(Joi.boolean(), Joi.func()),
     json: Joi.boolean(),
     stringify: Joi.boolean(),
@@ -27,6 +28,7 @@ const fileTransportSchema = Joi.compile(Joi.object({
     label: Joi.string(),
     silent: Joi.boolean(),
     colorize: Joi.boolean().default(true),
+    format: Joi.func().default(winston.format.simple),
     timestamp: Joi.alternatives().try(Joi.boolean(), Joi.func()),
     filename: Joi.string(),
     maxsize: Joi.number(),
@@ -127,13 +129,7 @@ exports.createLogger = function (params) {
             logger.remove(winston.transports.Console);
 
             const config = Joi.attempt(options, consoleTransportSchema);
-            logger.add(new winston.transports.Console({
-                ...config,
-                format: winston.format.combine(
-                    winston.format.colorize(),
-                    winston.format.simple()
-                )
-            }));
+            logger.add(new winston.transports.Console(config));
         }
 
         if (transport == 'file') {
