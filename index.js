@@ -7,7 +7,7 @@ const {LoggingWinston: StackdriverTransport} = require('@google-cloud/logging-wi
 
 
 const consoleTransportSchema = Joi.compile(Joi.object({
-    level: Joi.string().valid('error', 'warn', 'info', 'verbose', 'debug', 'silly'),
+    level: Joi.string().valid('error', 'warn', 'info', 'verbose', 'debug', 'silly').default('info'),
     silent: Joi.boolean(),
     colorize: Joi.boolean().default(true),
     format: Joi.func().default(winston.format.simple),
@@ -24,7 +24,7 @@ const consoleTransportSchema = Joi.compile(Joi.object({
 
 
 const fileTransportSchema = Joi.compile(Joi.object({
-    level: Joi.string().valid('error', 'warn', 'info', 'verbose', 'debug', 'silly'),
+    level: Joi.string().valid('error', 'warn', 'info', 'verbose', 'debug', 'silly').default('info'),
     label: Joi.string(),
     silent: Joi.boolean(),
     colorize: Joi.boolean().default(true),
@@ -52,7 +52,7 @@ const papertrailTransportSchema = Joi.compile(Joi.object({
     host: Joi.string().required(),
     port: Joi.number().port().required(),
     program: Joi.string().required(),
-    level: Joi.string().valid('error', 'warn', 'info', 'verbose', 'debug', 'silly'),
+    level: Joi.string().valid('error', 'warn', 'info', 'verbose', 'debug', 'silly').default('info'),
     inlineMeta: Joi.boolean().default(true),
     colorize: Joi.func(),
     flushOnClose: Joi.boolean().default(true),
@@ -74,7 +74,7 @@ const papertrailTransportSchema = Joi.compile(Joi.object({
 
 
 const elasticsearchTransportSchema = Joi.compile(Joi.object({
-    level: Joi.string().valid('error', 'warn', 'info', 'verbose', 'debug', 'silly'),
+    level: Joi.string().valid('error', 'warn', 'info', 'verbose', 'debug', 'silly').default('info'),
     index: Joi.string(),
     indexPrefix: Joi.string(),
     indexSuffixPattern: Joi.string(),
@@ -91,7 +91,7 @@ const elasticsearchTransportSchema = Joi.compile(Joi.object({
 
 
 const stackdriverTransportSchema = Joi.compile(Joi.object({
-    level: Joi.string().valid('error', 'warn', 'info', 'verbose', 'debug', 'silly'),
+    level: Joi.string().valid('error', 'warn', 'info', 'verbose', 'debug', 'silly').default('info'),
     projectId: Joi.string().required(),
     logName: Joi.string().required(),
     serviceContext: Joi.object({
@@ -201,4 +201,11 @@ exports.createLogger = function (params) {
     });
 
     return logger;
+}
+
+exports.transports = {
+    ...winston.transports,
+    Papertrail: PapertrailTransport,
+    Elasticsearch: ElasticsearchTransport,
+    Stackdriver: StackdriverTransport
 }
