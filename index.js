@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const Joi = require('joi');
 const winston = require('winston');
+const util = require('util');
 const {PapertrailTransport} = require('winston-papertrail-transport');
 const {ElasticsearchTransport} = require('winston-elasticsearch');
 const {LoggingWinston: StackdriverTransport} = require('@google-cloud/logging-winston');
@@ -111,7 +112,42 @@ exports.createLogger = function (params) {
         transports: Joi.object()
     }));
 
-    const logger = winston.createLogger({level: 'silly'});
+    const logger = winston.createLogger({
+        level: 'silly',
+        format: winston.format.combine(
+            {
+                transform: (info) => {
+                    const {message, stack} = info;
+
+                    if (info instanceof Error)
+                        info.message = Object.assign({stack}, {}).stack;
+
+                    const args = [info.message, ...(info[Symbol.for('splat')] || [])];
+                    info.message = args;
+
+                    const msg = args.map(arg => {
+                        if (arg instanceof Error) {
+                            const {message, stack} = arg;
+                            if (!info.stack)
+                                info.stack = Object.assign({message, stack}, arg)['stack'];
+                            return Object.assign({message, stack}, arg)['stack'];
+                        }
+
+                        if (typeof arg == 'object')
+                            return util.inspect(arg, {compact: true, depth: 10, colors: false});
+
+                        return arg;
+                    }).join(', ');
+
+                    /* This is to get JSON formatter to grab these parameters of log calls */
+                    info.arguments = args;
+
+                    info[Symbol.for('message')] = `[${info[Symbol.for('level')]}]: ${msg}`;
+                    return info;
+                }
+            },
+        )
+    });
 
     _.forEach(transports, (options, transport) => {
         if (_.isBoolean(options)) {
