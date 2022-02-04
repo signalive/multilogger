@@ -156,6 +156,8 @@ exports.createLogger = function (params) {
         } else if (_.isString(options)) {
             if (options == 'enabled') options = {};
             else if (options == 'disabled') return;
+            else if (['error', 'warn', 'info', 'verbose', 'debug', 'silly'].includes(options))
+                options = {level: options};
             else
                 throw new Error(`Unknown option ${options} for transport ${transport}`);
         }
