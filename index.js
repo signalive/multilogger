@@ -226,6 +226,7 @@ exports.createLogger = function (params) {
                 keyFilename,
                 labels: {
                     name: name,
+                    container_name: serviceType,
                     version:  apiVersion
                 }
             });
