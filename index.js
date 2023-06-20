@@ -114,39 +114,6 @@ exports.createLogger = function (params) {
 
     const logger = winston.createLogger({
         level: 'silly',
-        format: winston.format.combine(
-            {
-                transform: (info) => {
-                    const {message, stack} = info;
-
-                    if (info instanceof Error)
-                        info.message = stack;
-
-                    const args = [info.message, ...(info[Symbol.for('splat')] || [])];
-                    info.message = args;
-
-                    const msg = args.map(arg => {
-                        if (arg instanceof Error) {
-                            const {message, stack} = arg;
-                            if (!info.stack)
-                                info.stack = stack;
-                            return stack;
-                        }
-
-                        if (typeof arg == 'object')
-                            return util.inspect(arg, {compact: true, depth: 10, colors: false});
-
-                        return arg;
-                    }).join(' ');
-
-                    /* This is to get JSON formatter to grab these parameters of log calls */
-                    info.arguments = args;
-
-                    info[Symbol.for('message')] = `[${info[Symbol.for('level')]}]: ${msg}`;
-                    return info;
-                }
-            },
-        )
     });
 
     _.forEach(transports, (options, transport) => {
