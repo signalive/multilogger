@@ -10,7 +10,6 @@ const {LoggingWinston: StackdriverTransport} = require('@google-cloud/logging-wi
 const consoleTransportSchema = Joi.compile(Joi.object({
     level: Joi.string().valid('error', 'warn', 'info', 'verbose', 'debug', 'silly').default('info'),
     silent: Joi.boolean(),
-    format: Joi.func(),
     humanReadableUnhandledException: Joi.boolean(),
     showLevel: Joi.boolean(),
     formatter: Joi.func(),
@@ -101,13 +100,13 @@ const stackdriverTransportSchema = Joi.compile(Joi.object({
     labels: Joi.object().optional()
 }).unknown(false));
 
-
 exports.createLogger = function (params) {
-    const {name, serviceType, apiVersion, transports} = Joi.attempt(params, Joi.object({
+    const {name, serviceType, apiVersion, transports, catchUncaughtErrors} = Joi.attempt(params, Joi.object({
         name: Joi.string(),
         serviceType: Joi.string(),
         apiVersion: Joi.string(),
-        transports: Joi.object()
+        transports: Joi.object(),
+        catchUncaughtErrors: Joi.boolean()
     }));
 
     const logger = winston.createLogger({
@@ -131,6 +130,30 @@ exports.createLogger = function (params) {
             logger.remove(winston.transports.Console);
 
             const config = Joi.attempt(options, consoleTransportSchema);
+            config.format = winston.format.printf(function (info) {
+                const {message, stack} = info;
+
+                if (info instanceof Error)
+                    info.message = stack;
+
+                const args = [info.message, ...(info[Symbol.for('splat')] || [])];
+
+                const msg = args.map(arg => {
+                    if (arg instanceof Error) {
+                        const {message, stack} = arg;
+                        if (!info.stack)
+                            info.stack = stack;
+                        return stack;
+                    }
+
+                    if (typeof arg == 'object')
+                        return util.inspect(arg, {compact: true, depth: 10, colors: false});
+
+                    return arg;
+                }).join(' ');
+
+                return `[${info[Symbol.for('level')]}]: ${msg}`;
+            }),
             logger.add(new winston.transports.Console(config));
         }
 
@@ -202,6 +225,16 @@ exports.createLogger = function (params) {
             logger.add(new StackdriverTransport(config));
         }
     });
+
+    if (catchUncaughtErrors) {
+        process.on('uncaughtException', (e) => {
+            logger.error('Uncaught Exception:', e);
+        });
+
+        process.on('unhandledRejection', (e) => {
+            logger.error('Unhandled Rejection:', e);
+        })
+    }
 
     return logger;
 }
