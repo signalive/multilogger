@@ -67,7 +67,6 @@ const elasticsearchTransportSchema = Joi.compile(Joi.object({
     index: Joi.string(),
     indexPrefix: Joi.string(),
     indexSuffixPattern: Joi.string(),
-    messageType: Joi.string(),
     transformer: Joi.func(),
     useTransformer: Joi.boolean(),
     ensureIndexTemplate: Joi.boolean(),
@@ -86,7 +85,6 @@ const elasticsearchTransportSchema = Joi.compile(Joi.object({
     apm: Joi.any(),
     dataStream: Joi.boolean(),
     source: Joi.string(),
-    internalLogger: Joi.func(),
 }).unknown(false));
 
 
